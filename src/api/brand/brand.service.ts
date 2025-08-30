@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { Brand } from 'src/core/entities/brand.entity';
@@ -16,10 +16,7 @@ export class BrandService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async create(
-    createBrandDto: CreateBrandDto,
-    file: Express.Multer.File | any,
-  ) {
+  async create(createBrandDto: CreateBrandDto, file: Express.Multer.File | any) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -35,7 +32,7 @@ export class BrandService {
       const brand = queryRunner.manager.create(Brand, {
         name: createBrandDto.name,
         description: createBrandDto.description,
-        ...(brandImage ? { image: brandImage } : {}), // 🔑 fix
+        ...(brandImage ? { image: brandImage } : {}),
       });
 
       await queryRunner.manager.save(brand);
@@ -56,17 +53,136 @@ export class BrandService {
     }
   }
 
-  async findAll() {}
-
-  findOne(id: number) {
-    return `This action returns a #${id} brand`;
+  async findAll() {
+    try {
+      const brands = await this.brandRepository.find({ relations: ['image'] });
+      return {
+        statusCode: 200,
+        message: 'Brands fetched successfully',
+        data: brands,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error on fetching brands: ${error.message}`,
+      );
+    }
   }
 
-  update(id: number, updateBrandDto: UpdateBrandDto) {
-    return `This action updates a #${id} brand`;
+  async findOne(id: number) {
+    try {
+      const brand = await this.brandRepository.findOne({
+        where: { id },
+        relations: ['image'],
+      });
+
+      if (!brand) {
+        return {
+          statusCode: 404,
+          message: `Brand with id ${id} not found`,
+          data: null,
+        };
+      }
+      return {
+        statusCode: 200,
+        message: 'Brand fetched successfully',
+        data: brand,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error on fetching brand: ${error.message}`,
+      );
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} brand`;
+  async update(id: number, updateBrandDto: UpdateBrandDto, file: Express.Multer.File | any) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const brand = await queryRunner.manager.findOne(Brand, {
+        where: { id },
+        relations: ['image'],
+      });
+
+      if (!brand) {
+        throw new NotFoundException(`Brand with id ${id} not found`);
+      }
+
+      // agar yangi file kelsa
+      if (file) {
+        // eski image bo‘lsa – o‘chir
+        if (brand.image) {
+          await this.fileService.deleteFile(brand.image.url, 'brandImages');
+          await queryRunner.manager.remove(BrandImage, brand.image);
+        }
+
+        // yangi image yoz
+        const fileName = await this.fileService.createFile(file, 'brandImages');
+        const newImage = queryRunner.manager.create(BrandImage, { url: fileName });
+        await queryRunner.manager.save(newImage);
+
+        brand.image = newImage;
+      }
+
+      // update qilinadigan fieldlar
+      brand.name = updateBrandDto.name ?? brand.name;
+      brand.description = updateBrandDto.description ?? brand.description;
+
+      await queryRunner.manager.save(brand);
+      await queryRunner.commitTransaction();
+
+      return {
+        statusCode: 200,
+        message: 'Brand updated successfully',
+        data: brand,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new InternalServerErrorException(
+        `Error on updating brand: ${error.message}`,
+      );
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async remove(id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const brand = await queryRunner.manager.findOne(Brand, {
+        where: { id },
+        relations: ['image'],
+      });
+
+      if (!brand) {
+        throw new NotFoundException(`Brand with id ${id} not found`);
+      }
+
+      // agar image bo‘lsa – file va DBdan o‘chir
+      if (brand.image) {
+        await this.fileService.deleteFile(brand.image.url, 'brandImages');
+        await queryRunner.manager.remove(BrandImage, brand.image);
+      }
+
+      await queryRunner.manager.remove(Brand, brand);
+      await queryRunner.commitTransaction();
+
+      return {
+        statusCode: 200,
+        message: 'Brand deleted successfully',
+        data: null,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new InternalServerErrorException(
+        `Error on deleting brand: ${error.message}`,
+      );
+    } finally {
+      await queryRunner.release();
+    }
   }
 }
