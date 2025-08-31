@@ -6,6 +6,8 @@ import { config } from 'src/config';
 import { FileModule } from './file/file.module';
 import { CategoryModule } from './category/category.module';
 import { BrandModule } from './brand/brand.module';
+import { AdminModule } from './admin/admin.module';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -27,6 +29,7 @@ import { BrandModule } from './brand/brand.module';
     FileModule,
     CategoryModule,
     BrandModule,
+    AdminModule,
   ],
 })
 export class AppModule {}
