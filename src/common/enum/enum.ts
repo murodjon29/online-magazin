@@ -1,5 +1,5 @@
 enum AdminRole {
-    SUPER_ADMIN = 'super_admin',
+    SUPERADMIN = 'super_admin',
     ADMIN = 'admin',
     USER = 'user',
     SELLER = 'seller'

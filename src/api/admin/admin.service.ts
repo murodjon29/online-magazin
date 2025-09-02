@@ -12,7 +12,7 @@ import { config } from 'src/config';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
-import { AdminRole } from 'src/enum/enum';
+import { AdminRole } from 'src/common/enum/enum';
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -87,7 +87,7 @@ export class AdminService implements OnModuleInit {
       });
 
       console.log(accesToken, payload);
-      
+
       await AdminService.writeCooki(res, refreshToken);
       return {
         statusCode: 200,

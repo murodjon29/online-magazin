@@ -1,9 +1,10 @@
 import { IsNumber, IsString } from "class-validator";
 
-export class CreateCategoryDto {
+
+export class CreateSubCatalogDto {
     @IsString()
     name: string;
-    
+
     @IsNumber()
-    subCatalogId: number
+    catalogId: number
 }

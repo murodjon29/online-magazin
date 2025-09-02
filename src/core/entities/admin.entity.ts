@@ -1,4 +1,4 @@
-import { AdminRole } from 'src/enum/enum';
+import { AdminRole } from 'src/common/enum/enum';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('admin')

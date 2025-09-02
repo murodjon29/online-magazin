@@ -106,7 +106,11 @@ export class BrandService {
       });
 
       if (!brand) {
-        throw new NotFoundException(`Brand with id ${id} not found`);
+        return {
+          statusCode: 404,
+          message: `Brand with id ${id} not found`,
+          data: null,
+        };
       }
 
       // agar yangi file kelsa
@@ -159,8 +163,11 @@ export class BrandService {
       });
 
       if (!brand) {
-        throw new NotFoundException(`Brand with id ${id} not found`);
-      }
+        return {
+          statusCode: 404,
+          message: `Brand with id ${id} not found`,
+          data: null,
+        };}
 
       // agar image bo‘lsa – file va DBdan o‘chir
       if (brand.image) {

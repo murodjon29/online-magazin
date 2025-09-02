@@ -1,36 +1,86 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Category } from '../../core/entities/category.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { CategoryImage } from 'src/core/entities/category-image.entity';
+import { FileService } from '../file/file.service';
+import { SubCatalog } from 'src/core/entities/sub-catalog.entity';
 
 @Injectable()
 export class CategoryService {
   constructor(
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
+    private readonly dataSource: DataSource,
+    private readonly fileService: FileService,
+    @InjectRepository(SubCatalog)
+    private subCatalogRepository: Repository<SubCatalog>,
   ) {}
 
-  async create(createCategoryDto: CreateCategoryDto) {
+  async create(
+    createCategoryDto: CreateCategoryDto,
+    file: Express.Multer.File | any,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
-      const category = this.categoryRepository.create(createCategoryDto);
-      await this.categoryRepository.save(category);
+
+      const subCatalog = await queryRunner.manager.findOne(SubCatalog, {
+        where: { id: createCategoryDto.subCatalogId },
+      });
+      if (!subCatalog) {
+        return {
+          statusCode: 404,
+          message: `SubCatalog with id ${createCategoryDto.subCatalogId} not found`,
+          data: null,
+        };
+      }
+
+      let categoryImage: CategoryImage | null = null;
+
+      if (file) {
+        const fileName = await this.fileService.createFile(
+          file,
+          'categoryImages',
+        );
+        categoryImage = queryRunner.manager.create(CategoryImage, {
+          url: fileName,
+        });
+        await queryRunner.manager.save(categoryImage);
+      }
+
+      const category = queryRunner.manager.create(Category, {
+        ...createCategoryDto,
+        subCatalog,
+        ...(categoryImage ? { image: categoryImage } : {}),
+      });
+
+      await queryRunner.manager.save(category);
+      await queryRunner.commitTransaction();
+
       return {
         statusCode: 201,
         message: 'Category created successfully',
         data: category,
       };
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new InternalServerErrorException(
         `Error on creating category: ${error.message}`,
       );
+    } finally {
+      await queryRunner.release();
     }
   }
 
   async findAll() {
     try {
-      const categories = await this.categoryRepository.find();
+      const categories = await this.categoryRepository.find({
+        relations: ['image', 'subCategories'],
+      });
       return {
         statusCode: 200,
         message: 'Categories fetched successfully',
@@ -45,7 +95,10 @@ export class CategoryService {
 
   async findOne(id: number) {
     try {
-      const category = await this.categoryRepository.findOne({ where: { id } });
+      const category = await this.categoryRepository.findOne({
+        where: { id },
+        relations: ['image', 'subCategories'],
+      });
       if (!category) {
         return {
           statusCode: 404,
@@ -65,9 +118,32 @@ export class CategoryService {
     }
   }
 
-  async update(id: number, updateCategoryDto: UpdateCategoryDto) {
+  async update(
+    id: number,
+    updateCategoryDto: UpdateCategoryDto,
+    file: Express.Multer.File | any,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      const category = await this.categoryRepository.findOne({ where: { id } });
+
+      const subCatalog = await queryRunner.manager.findOne(SubCatalog, {
+        where: { id: updateCategoryDto.subCatalogId },    
+      })
+      if (!subCatalog) {
+        return {
+          statusCode: 404,
+          message: `SubCatalog with id ${updateCategoryDto.subCatalogId} not found`,
+          data: null,
+        };
+      }
+
+      const category = await queryRunner.manager.findOne(Category, {
+        where: { id },
+        relations: ['image', 'subCategories'],
+      });
       if (!category) {
         return {
           statusCode: 404,
@@ -75,10 +151,31 @@ export class CategoryService {
           data: null,
         };
       }
-      const updatedCategory = await this.categoryRepository.update(
-        id,
-        updateCategoryDto,
-      );
+      if (file) {
+        if (category?.image) {
+          await this.fileService.deleteFile(
+            category.image.url,
+            'categoryImages',
+          );
+          await queryRunner.manager.remove(CategoryImage, category.image);
+        }
+        const fileName = await this.fileService.createFile(
+          file,
+          'categoryImages',
+        );
+
+        const newImage = queryRunner.manager.create(CategoryImage, {
+          url: fileName,
+        });
+        await queryRunner.manager.save(newImage);
+        category.image = newImage;
+      }
+
+      category.name = updateCategoryDto.name ?? category.name;
+
+      await queryRunner.manager.save(category);
+      await queryRunner.commitTransaction();
+
       await this.categoryRepository.save(category);
       return {
         statusCode: 200,
@@ -93,8 +190,15 @@ export class CategoryService {
   }
 
   async remove(id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      const category = await this.categoryRepository.findOne({ where: { id } });
+      const category = await queryRunner.manager.findOne(Category, {
+        where: { id },
+        relations: ['image'],
+      });
       if (!category) {
         return {
           statusCode: 404,
@@ -102,7 +206,12 @@ export class CategoryService {
           data: null,
         };
       }
-      await this.categoryRepository.delete(id);
+      if (category.image) {
+        await this.fileService.deleteFile(category.image.url, 'categoryImages');
+        await queryRunner.manager.remove(CategoryImage, category.image);
+      }
+      await queryRunner.manager.remove(Category, category);
+      await queryRunner.commitTransaction();
       return {
         statusCode: 200,
         message: 'Category deleted successfully',
@@ -112,6 +221,8 @@ export class CategoryService {
       throw new InternalServerErrorException(
         `Error on deleting category: ${error.message}`,
       );
+    } finally {
+      await queryRunner.release();
     }
   }
 }

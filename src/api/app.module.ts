@@ -8,6 +8,8 @@ import { CategoryModule } from './category/category.module';
 import { BrandModule } from './brand/brand.module';
 import { AdminModule } from './admin/admin.module';
 import { JwtModule } from '@nestjs/jwt';
+import { CatalogModule } from './catalog/catalog.module';
+import { SubCatalogModule } from './sub-catalog/sub-catalog.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { JwtModule } from '@nestjs/jwt';
     CategoryModule,
     BrandModule,
     AdminModule,
+    CatalogModule,
+    SubCatalogModule,
   ],
 })
 export class AppModule {}
