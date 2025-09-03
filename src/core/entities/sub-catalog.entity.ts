@@ -10,9 +10,9 @@ export class SubCatalog {
   @Column()
   name: string;
 
-  @ManyToOne(() => Catalog, (catalog) => catalog.subCatalogs, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Catalog, (catalog) => catalog.subCatalogs, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   catalog: Catalog;
 
-  @OneToMany(() => Category, (category) => category.subCatalog, { cascade: true })
+  @OneToMany(() => Category, (category) => category.subCatalog, { cascade: true , onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   categories: Category[];
 }

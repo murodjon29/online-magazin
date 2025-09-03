@@ -9,6 +9,6 @@ export class Catalog {
   @Column({ unique: true })
   name: string;
 
-  @OneToMany(() => SubCatalog, (subCatalog) => subCatalog.catalog, { cascade: true })
+  @OneToMany(() => SubCatalog, (subCatalog) => subCatalog.catalog, { cascade: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   subCatalogs: SubCatalog[];
 }

@@ -9,6 +9,6 @@ export class CategoryImage {
   @Column()
   url: string;
 
-  @OneToOne(() => Category, (category) => category.image, { onDelete: 'CASCADE' })
+  @OneToOne(() => Category, (category) => category.image, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   category: Category;
 }

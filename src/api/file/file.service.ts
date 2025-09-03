@@ -12,7 +12,7 @@ export class FileService {
   async createFile(file: Express.Multer.File | any, folder: string): Promise<string> {
     try {
       const ext = extname(file.originalname);
-      const file_name = `${file.originalname.split('.')[0]}__${v4()}${ext.toLowerCase()}`;
+      const file_name = `${file.originalname.split('.')[0]}__${v4()}${ext.toLowerCase()}`.trim();
       const upload_path = resolve(__dirname, '..', '..', '..', '..', 'uploads', folder);
 
       if (!existsSync(upload_path)) {

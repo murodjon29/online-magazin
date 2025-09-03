@@ -14,8 +14,10 @@ export class Category {
   @OneToOne(() => CategoryImage, (image) => image.category, {
     cascade: true,
     eager: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
   })
-  @JoinColumn({ name: 'image_id' , referencedColumnName: 'id' })
+  @JoinColumn({ name: 'image_id' , referencedColumnName: 'id' , } )
   image: CategoryImage;
 
   @ManyToOne(() => SubCatalog, (subCatalog) => subCatalog.categories)

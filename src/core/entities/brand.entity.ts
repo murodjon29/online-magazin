@@ -12,6 +12,6 @@ export class Brand {
   @Column()
   description: string;
     
-  @OneToOne(() => BrandImage, (image) => image.brand, { cascade: true })
+  @OneToOne(() => BrandImage, (image) => image.brand, { cascade: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   image: BrandImage;
 }
