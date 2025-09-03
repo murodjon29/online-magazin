@@ -29,7 +29,7 @@ export class CategoryService {
     try {
 
       const subCatalog = await queryRunner.manager.findOne(SubCatalog, {
-        where: { id: createCategoryDto.subCatalogId },
+        where: { id: Number( createCategoryDto.subCatalogId) },
       });
       if (!subCatalog) {
         return {
@@ -130,7 +130,7 @@ export class CategoryService {
     try {
 
       const subCatalog = await queryRunner.manager.findOne(SubCatalog, {
-        where: { id: updateCategoryDto.subCatalogId },    
+        where: { id: Number(updateCategoryDto.subCatalogId) },    
       })
       if (!subCatalog) {
         return {

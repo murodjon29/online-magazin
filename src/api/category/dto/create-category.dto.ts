@@ -4,6 +4,6 @@ export class CreateCategoryDto {
     @IsString()
     name: string;
     
-    @IsNumber()
-    subCatalogId: number
+    @IsString()
+    subCatalogId: string
 }
