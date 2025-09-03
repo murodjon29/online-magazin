@@ -24,6 +24,11 @@ export class AdminService implements OnModuleInit {
 
   async onModuleInit() {
     try {
+      const exist = await this.adminRepository.findOne({
+        where: { email: config.ADMIN_LOGIN },
+      });
+      if (exist) return; // agar allaqachon bor bo‘lsa, qaytamiz
+
       const hashedPassword = await bcrypt.hash(config.ADMIN_PAROL, 10);
       const admin = this.adminRepository.create({
         email: config.ADMIN_LOGIN,
@@ -31,11 +36,7 @@ export class AdminService implements OnModuleInit {
         role: AdminRole.ADMIN,
       });
       await this.adminRepository.save(admin);
-      return {
-        statusCode: 201,
-        message: 'Admin created successfully',
-        data: admin,
-      };
+      console.log('✅ Default admin created');
     } catch (error) {
       throw new InternalServerErrorException(
         `Error on creating admin: ${error.message}`,
@@ -46,16 +47,15 @@ export class AdminService implements OnModuleInit {
   async login(createAdminDto: CreateAdminDto, res: Response) {
     try {
       const admin = await this.adminRepository.findOne({
-        where: {
-          email: createAdminDto.email,
-        },
+        where: { email: createAdminDto.email },
       });
+
       if (!admin) {
-        return {
+        return res.status(404).json({
           statusCode: 404,
           message: 'Admin not found',
           data: null,
-        };
+        });
       }
 
       const isPasswordMatch = await bcrypt.compare(
@@ -63,11 +63,11 @@ export class AdminService implements OnModuleInit {
         admin.password,
       );
       if (!isPasswordMatch) {
-        return {
+        return res.status(404).json({
           statusCode: 404,
           message: 'Admin not found',
           data: null,
-        };
+        });
       }
 
       const payload = {
@@ -76,7 +76,7 @@ export class AdminService implements OnModuleInit {
         role: admin.role,
       };
 
-      const accesToken = this.jwtService.sign(payload, {
+      const accessToken = this.jwtService.sign(payload, {
         secret: config.ACCESS_TOKEN_KEY,
         expiresIn: config.ACCESS_TOKEN_TIME,
       });
@@ -86,15 +86,20 @@ export class AdminService implements OnModuleInit {
         expiresIn: config.REFRESH_TOKEN_TIME,
       });
 
-      console.log(accesToken, payload);
-
       await AdminService.writeCooki(res, refreshToken);
-      return {
+
+      return res.status(200).json({
         statusCode: 200,
         message: 'Admin logged in successfully',
-        data: accesToken,
-      };
-    } catch (error) {}
+        data: accessToken,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: 'Internal server error',
+        error: error.message,
+      });
+    }
   }
 
   findAll() {
@@ -117,7 +122,7 @@ export class AdminService implements OnModuleInit {
     try {
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: false,
+        secure: false, // faqat HTTPS bo‘lsa true qilinadi
         sameSite: 'lax',
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
