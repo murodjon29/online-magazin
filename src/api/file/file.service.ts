@@ -7,13 +7,14 @@ import { config } from 'src/config';
 @Injectable()
 export class FileService {
   private readonly base_url = config.BASE_API;
+  private readonly upload_root = resolve(process.cwd(), 'uploads'); // project root yonida
 
   // Fayl yaratish
   async createFile(file: Express.Multer.File | any, folder: string): Promise<string> {
     try {
       const ext = extname(file.originalname);
       const file_name = `${file.originalname.split('.')[0]}__${v4()}${ext.toLowerCase()}`.trim();
-      const upload_path = resolve(__dirname, '..', '..', '..', '..', 'uploads', folder);
+      const upload_path = resolve(this.upload_root, folder);
 
       if (!existsSync(upload_path)) {
         mkdirSync(upload_path, { recursive: true });
@@ -37,7 +38,7 @@ export class FileService {
     try {
       const prefix = `${this.base_url}/uploads/${folder}/`;
       const file = file_url.replace(prefix, '');
-      const file_path = resolve(__dirname, '..', '..', '..', '..', 'uploads', folder, file);
+      const file_path = resolve(this.upload_root, folder, file);
 
       if (!existsSync(file_path)) {
         throw new InternalServerErrorException(`File does not exist: ${file_url}`);
@@ -58,7 +59,7 @@ export class FileService {
   async existFile(file_url: string, folder: string): Promise<boolean> {
     const prefix = `${this.base_url}/uploads/${folder}/`;
     const file = file_url.replace(prefix, '');
-    const file_path = resolve(__dirname, '..', '..', '..', '..', 'uploads', folder, file);
+    const file_path = resolve(this.upload_root, folder, file);
 
     return existsSync(file_path);
   }

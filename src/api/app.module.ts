@@ -21,12 +21,11 @@ import { SubCatalogModule } from './sub-catalog/sub-catalog.module';
       autoLoadEntities: true,
     }),
     ServeStaticModule.forRoot({
-      rootPath: resolve(process.cwd(), 'uploads'),
-      serveRoot: '/uploads',
+      rootPath: resolve(process.cwd(), 'uploads'), // 📂 src bilan yonida uploads
+      serveRoot: '/uploads', // 🌐 http://host:port/uploads
     }),
 
     // Modules
-
     FileModule,
     CategoryModule,
     BrandModule,
