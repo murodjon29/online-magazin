@@ -31,7 +31,7 @@ export class CatalogService {
   async findAll() {
     try {
       const catalogs = await this.catalogRepository.find({
-        relations: ['subCatalog'], // ✅ to‘g‘rilandi
+        relations: ['subCatalogs'], // ✅ to‘g‘rilandi
       });
       return {
         statusCode: 200,
@@ -49,7 +49,7 @@ export class CatalogService {
     try {
       const catalog = await this.catalogRepository.findOne({
         where: { id },
-        relations: ['subCatalog'], // ✅ to‘g‘rilandi
+        relations: ['subCatalogs'], // ✅ to‘g‘rilandi
       });
       if (!catalog) {
         return {
@@ -86,7 +86,7 @@ export class CatalogService {
         message: 'Catalog updated successfully',
         data: await this.catalogRepository.findOne({
           where: { id },
-          relations: ['subCatalog'], // ✅ to‘g‘rilandi
+          relations: ['subCatalogs'], // ✅ to‘g‘rilandi
         }),
       };
     } catch (error) {
