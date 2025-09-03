@@ -21,7 +21,7 @@ import { SubCatalogModule } from './sub-catalog/sub-catalog.module';
       autoLoadEntities: true,
     }),
     ServeStaticModule.forRoot({
-      rootPath: resolve(__dirname, '..', '..', '..', '..', 'uploads'),
+      rootPath: resolve(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
 
