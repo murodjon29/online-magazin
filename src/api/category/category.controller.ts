@@ -1,16 +1,29 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
-  @UseInterceptors(FilesInterceptor('file'))
   @Post()
-  create(@Body() createCategoryDto: CreateCategoryDto, file: Express.Multer.File | any) {
+  @UseInterceptors(FileInterceptor('file')) // 👈 faqat bitta rasm uchun
+  create(
+    @Body() createCategoryDto: CreateCategoryDto,
+    @UploadedFile() file: Express.Multer.File, // 👈 endi file to‘g‘ri keladi
+  ) {
     return this.categoryService.create(createCategoryDto, file);
   }
 
@@ -24,9 +37,13 @@ export class CategoryController {
     return this.categoryService.findOne(+id);
   }
 
-  @UseInterceptors(FilesInterceptor('file'))
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto, file: Express.Multer.File | any) {
+  @UseInterceptors(FileInterceptor('file'))
+  update(
+    @Param('id') id: string,
+    @Body() updateCategoryDto: UpdateCategoryDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     return this.categoryService.update(+id, updateCategoryDto, file);
   }
 
