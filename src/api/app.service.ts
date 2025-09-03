@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { config } from 'src/config';
 import { HttpStatus, ValidationPipe } from '@nestjs/common';
-import { join } from 'path';
 import * as express from 'express';
 
 export class Application {
@@ -13,8 +12,8 @@ export class Application {
       origin: '*',
     });
 
-    // ✅ uploads papkasini butunlay public qilish
-    app.use('/uploads', express.static(join(__dirname, '..', '..', 'uploads')));
+    // ✅ uploads ni absolute path bilan ochish
+    app.use('/uploads', express.static('/home/ubuntu/uploads'));
 
     app.useGlobalPipes(
       new ValidationPipe({
