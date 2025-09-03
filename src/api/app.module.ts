@@ -18,7 +18,7 @@ import { SubCatalogModule } from './sub-catalog/sub-catalog.module';
       url: config.DB_URL,
       entities: ['dist/core/entity/*.entity{.ts,.js}'],
       synchronize: true,
-      logging: true,
+      logging: false,
       autoLoadEntities: true,
     }),
     ServeStaticModule.forRoot({
