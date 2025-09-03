@@ -1,4 +1,7 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { DataSource, Repository } from 'typeorm';
@@ -27,9 +30,8 @@ export class CategoryService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-
       const subCatalog = await queryRunner.manager.findOne(SubCatalog, {
-        where: { id: Number( createCategoryDto.subCatalogId) },
+        where: { id: Number(createCategoryDto.subCatalogId) },
       });
       if (!subCatalog) {
         return {
@@ -79,7 +81,7 @@ export class CategoryService {
   async findAll() {
     try {
       const categories = await this.categoryRepository.find({
-        relations: ['image', 'subCategories'],
+        relations: ['image', 'subCatalog'],
       });
       return {
         statusCode: 200,
@@ -97,7 +99,7 @@ export class CategoryService {
     try {
       const category = await this.categoryRepository.findOne({
         where: { id },
-        relations: ['image', 'subCategories'],
+        relations: ['image', 'subCatalog'],
       });
       if (!category) {
         return {
@@ -128,10 +130,9 @@ export class CategoryService {
     await queryRunner.startTransaction();
 
     try {
-
       const subCatalog = await queryRunner.manager.findOne(SubCatalog, {
-        where: { id: Number(updateCategoryDto.subCatalogId) },    
-      })
+        where: { id: Number(updateCategoryDto.subCatalogId) },
+      });
       if (!subCatalog) {
         return {
           statusCode: 404,
@@ -142,7 +143,7 @@ export class CategoryService {
 
       const category = await queryRunner.manager.findOne(Category, {
         where: { id },
-        relations: ['image', 'subCategories'],
+        relations: ['image', 'subCatalog'],
       });
       if (!category) {
         return {
@@ -151,6 +152,7 @@ export class CategoryService {
           data: null,
         };
       }
+
       if (file) {
         if (category?.image) {
           await this.fileService.deleteFile(
@@ -172,20 +174,23 @@ export class CategoryService {
       }
 
       category.name = updateCategoryDto.name ?? category.name;
+      category.subCatalog = subCatalog;
 
       await queryRunner.manager.save(category);
       await queryRunner.commitTransaction();
 
-      await this.categoryRepository.save(category);
       return {
         statusCode: 200,
         message: 'Category updated successfully',
         data: category,
       };
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new InternalServerErrorException(
         `Error on updating category: ${error.message}`,
       );
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -218,6 +223,7 @@ export class CategoryService {
         data: null,
       };
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new InternalServerErrorException(
         `Error on deleting category: ${error.message}`,
       );
