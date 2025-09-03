@@ -22,13 +22,15 @@ export class CategoryService {
     private subCatalogRepository: Repository<SubCatalog>,
   ) {}
 
+  // CREATE
   async create(
     createCategoryDto: CreateCategoryDto,
-    file: Express.Multer.File | any,
+    file?: Express.Multer.File,
   ) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+
     try {
       const subCatalog = await queryRunner.manager.findOne(SubCatalog, {
         where: { id: Number(createCategoryDto.subCatalogId) },
@@ -44,13 +46,8 @@ export class CategoryService {
       let categoryImage: CategoryImage | null = null;
 
       if (file) {
-        const fileName = await this.fileService.createFile(
-          file,
-          'categoryImages',
-        );
-        categoryImage = queryRunner.manager.create(CategoryImage, {
-          url: fileName,
-        });
+        const fileName = await this.fileService.createFile(file, 'categoryImages');
+        categoryImage = queryRunner.manager.create(CategoryImage, { url: fileName });
         await queryRunner.manager.save(categoryImage);
       }
 
@@ -78,6 +75,7 @@ export class CategoryService {
     }
   }
 
+  // FIND ALL
   async findAll() {
     try {
       const categories = await this.categoryRepository.find({
@@ -95,6 +93,7 @@ export class CategoryService {
     }
   }
 
+  // FIND ONE
   async findOne(id: number) {
     try {
       const category = await this.categoryRepository.findOne({
@@ -120,10 +119,11 @@ export class CategoryService {
     }
   }
 
+  // UPDATE
   async update(
     id: number,
     updateCategoryDto: UpdateCategoryDto,
-    file: Express.Multer.File | any,
+    file?: Express.Multer.File,
   ) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -154,21 +154,13 @@ export class CategoryService {
       }
 
       if (file) {
-        if (category?.image) {
-          await this.fileService.deleteFile(
-            category.image.url,
-            'categoryImages',
-          );
+        if (category.image) {
+          await this.fileService.deleteFile(category.image.url, 'categoryImages');
           await queryRunner.manager.remove(CategoryImage, category.image);
         }
-        const fileName = await this.fileService.createFile(
-          file,
-          'categoryImages',
-        );
 
-        const newImage = queryRunner.manager.create(CategoryImage, {
-          url: fileName,
-        });
+        const fileName = await this.fileService.createFile(file, 'categoryImages');
+        const newImage = queryRunner.manager.create(CategoryImage, { url: fileName });
         await queryRunner.manager.save(newImage);
         category.image = newImage;
       }
@@ -194,6 +186,7 @@ export class CategoryService {
     }
   }
 
+  // REMOVE
   async remove(id: number) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -204,6 +197,7 @@ export class CategoryService {
         where: { id },
         relations: ['image'],
       });
+
       if (!category) {
         return {
           statusCode: 404,
@@ -211,12 +205,15 @@ export class CategoryService {
           data: null,
         };
       }
+
       if (category.image) {
         await this.fileService.deleteFile(category.image.url, 'categoryImages');
         await queryRunner.manager.remove(CategoryImage, category.image);
       }
+
       await queryRunner.manager.remove(Category, category);
       await queryRunner.commitTransaction();
+
       return {
         statusCode: 200,
         message: 'Category deleted successfully',
