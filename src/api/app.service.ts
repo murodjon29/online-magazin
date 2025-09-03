@@ -13,8 +13,8 @@ export class Application {
       origin: '*',
     });
 
-    // ✅ uploads papkasini public qilish
-    app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
+    // ✅ uploads papkasini butunlay public qilish
+    app.use('/uploads', express.static(join(__dirname, '..', '..', 'uploads')));
 
     app.useGlobalPipes(
       new ValidationPipe({
