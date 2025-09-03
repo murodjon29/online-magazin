@@ -45,8 +45,8 @@ export class CategoryService {
 
       let categoryImage: CategoryImage | null = null;
 
+      console.log(file);
       if (file) {
-        console.log(file);
         
         const fileName = await this.fileService.createFile(file, 'categoryImages');
         categoryImage = queryRunner.manager.create(CategoryImage, { url: fileName });
