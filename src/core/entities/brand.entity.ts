@@ -1,4 +1,4 @@
-import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { BrandImage } from "./brand-emage.entity";
 
 @Entity('brands')
@@ -13,5 +13,6 @@ export class Brand {
   description: string;
     
   @OneToOne(() => BrandImage, (image) => image.brand, { cascade: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'image_id' , referencedColumnName: 'id' , } )
   image: BrandImage;
 }
