@@ -1,3 +1,4 @@
+// brand-emage.entity.ts
 import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Brand } from './brand.entity';
 

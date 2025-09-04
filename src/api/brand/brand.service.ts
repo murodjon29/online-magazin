@@ -22,27 +22,32 @@ export class BrandService {
     await queryRunner.startTransaction();
 
     try {
-      const brand = queryRunner.manager.create(Brand, {
+      // Avval brandni saqlaymiz
+      let brand = queryRunner.manager.create(Brand, {
         name: createBrandDto.name,
         description: createBrandDto.description,
       });
+      brand = await queryRunner.manager.save(brand);
 
-      // Agar file kelsa - image yaratamiz
+      // Fayl kelsa – image yaratamiz va brandga biriktiramiz
       if (file) {
         const fileName = await this.fileService.createFile(file, 'brandImages');
         const brandImage = queryRunner.manager.create(BrandImage, { url: fileName });
         await queryRunner.manager.save(brandImage);
 
-        brand.image = brandImage; // 👈 FK brands.image_id ga yoziladi
+        brand.image = brandImage;
+        brand = await queryRunner.manager.save(brand); // FK yangilanadi
       }
 
-      await queryRunner.manager.save(brand);
       await queryRunner.commitTransaction();
 
       return {
         statusCode: 201,
         message: 'Brand created successfully',
-        data: brand,
+        data: await this.brandRepository.findOne({
+          where: { id: brand.id },
+          relations: ['image'],
+        }),
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -101,7 +106,7 @@ export class BrandService {
     await queryRunner.startTransaction();
 
     try {
-      const brand = await queryRunner.manager.findOne(Brand, {
+      let brand = await queryRunner.manager.findOne(Brand, {
         where: { id },
         relations: ['image'],
       });
@@ -114,15 +119,13 @@ export class BrandService {
         };
       }
 
-      // Agar yangi fayl kelsa
+      // Fayl kelsa – eski image o‘chiriladi, yangisi qo‘shiladi
       if (file) {
-        // Eski image bo‘lsa – o‘chiramiz
         if (brand.image) {
           await this.fileService.deleteFile(brand.image.url, 'brandImages');
           await queryRunner.manager.remove(BrandImage, brand.image);
         }
 
-        // Yangi image qo‘shamiz
         const fileName = await this.fileService.createFile(file, 'brandImages');
         const newImage = queryRunner.manager.create(BrandImage, { url: fileName });
         await queryRunner.manager.save(newImage);
@@ -130,17 +133,19 @@ export class BrandService {
         brand.image = newImage;
       }
 
-      // Update qilinadigan fieldlar
       brand.name = updateBrandDto.name ?? brand.name;
       brand.description = updateBrandDto.description ?? brand.description;
 
-      await queryRunner.manager.save(brand);
+      brand = await queryRunner.manager.save(brand);
       await queryRunner.commitTransaction();
 
       return {
         statusCode: 200,
         message: 'Brand updated successfully',
-        data: brand,
+        data: await this.brandRepository.findOne({
+          where: { id: brand.id },
+          relations: ['image'],
+        }),
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -171,7 +176,6 @@ export class BrandService {
         };
       }
 
-      // Agar image bo‘lsa – faylni va DBdagi yozuvni o‘chiramiz
       if (brand.image) {
         await this.fileService.deleteFile(brand.image.url, 'brandImages');
         await queryRunner.manager.remove(BrandImage, brand.image);
