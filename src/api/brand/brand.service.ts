@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { Brand } from 'src/core/entities/brand.entity';
@@ -20,20 +20,21 @@ export class BrandService {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+
     try {
-      let brandImage: BrandImage | null = null;
-
-      if (file) {
-        const fileName = await this.fileService.createFile(file, 'brandImages');
-        brandImage = queryRunner.manager.create(BrandImage, { url: fileName });
-        await queryRunner.manager.save(brandImage);
-      }
-
       const brand = queryRunner.manager.create(Brand, {
         name: createBrandDto.name,
         description: createBrandDto.description,
-        ...(brandImage ? { image: brandImage } : {}),
       });
+
+      // Agar file kelsa - image yaratamiz
+      if (file) {
+        const fileName = await this.fileService.createFile(file, 'brandImages');
+        const brandImage = queryRunner.manager.create(BrandImage, { url: fileName });
+        await queryRunner.manager.save(brandImage);
+
+        brand.image = brandImage; // 👈 FK brands.image_id ga yoziladi
+      }
 
       await queryRunner.manager.save(brand);
       await queryRunner.commitTransaction();
@@ -113,15 +114,15 @@ export class BrandService {
         };
       }
 
-      // agar yangi file kelsa
+      // Agar yangi fayl kelsa
       if (file) {
-        // eski image bo‘lsa – o‘chir
+        // Eski image bo‘lsa – o‘chiramiz
         if (brand.image) {
           await this.fileService.deleteFile(brand.image.url, 'brandImages');
           await queryRunner.manager.remove(BrandImage, brand.image);
         }
 
-        // yangi image yoz
+        // Yangi image qo‘shamiz
         const fileName = await this.fileService.createFile(file, 'brandImages');
         const newImage = queryRunner.manager.create(BrandImage, { url: fileName });
         await queryRunner.manager.save(newImage);
@@ -129,7 +130,7 @@ export class BrandService {
         brand.image = newImage;
       }
 
-      // update qilinadigan fieldlar
+      // Update qilinadigan fieldlar
       brand.name = updateBrandDto.name ?? brand.name;
       brand.description = updateBrandDto.description ?? brand.description;
 
@@ -167,9 +168,10 @@ export class BrandService {
           statusCode: 404,
           message: `Brand with id ${id} not found`,
           data: null,
-        };}
+        };
+      }
 
-      // agar image bo‘lsa – file va DBdan o‘chir
+      // Agar image bo‘lsa – faylni va DBdagi yozuvni o‘chiramiz
       if (brand.image) {
         await this.fileService.deleteFile(brand.image.url, 'brandImages');
         await queryRunner.manager.remove(BrandImage, brand.image);
