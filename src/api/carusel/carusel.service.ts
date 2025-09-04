@@ -16,13 +16,12 @@ export class CaruselService {
 
   async create(createCaruselDto: CreateCaruselDto, file: Express.Multer.File | any) {
     try {
-      const carusel = this.caruselRepository.create(createCaruselDto);
-
-      await this.caruselRepository.save(carusel);
+      let caruselImage;
       if(file){
         const fileName = await this.fileService.createFile(file, 'caruselImages');
-        this.caruselRepository.create({url: fileName});
+        caruselImage = this.caruselRepository.create({url: fileName});
       }
+      const carusel = this.caruselRepository.create({...createCaruselDto, url: caruselImage});
       await this.caruselRepository.save(carusel);
 
       return {
