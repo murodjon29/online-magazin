@@ -9,6 +9,7 @@ import { BrandModule } from './brand/brand.module';
 import { AdminModule } from './admin/admin.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { SubCatalogModule } from './sub-catalog/sub-catalog.module';
+import { CaruselModule } from './carusel/carusel.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { SubCatalogModule } from './sub-catalog/sub-catalog.module';
     AdminModule,
     CatalogModule,
     SubCatalogModule,
+    CaruselModule,
   ],
 })
 export class AppModule {}
