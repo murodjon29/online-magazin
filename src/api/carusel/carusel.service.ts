@@ -38,19 +38,107 @@ export class CaruselService {
     }
   }
 
-  findAll() {
-    return `This action returns all carusel`;
+  async findAll() {
+    try {
+      const carusels = await this.caruselRepository.find();
+      return {
+        statusCode: 200,
+        message: 'Carusels fetched successfully',
+        data: carusels,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error on fetching carusels: ${error.message}`,
+      );
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} carusel`;
+  async findOne(id: number) {
+    try {
+      const carusel = await this.caruselRepository.findOne({
+        where: { id },
+      })
+      if(!carusel) {
+        return {
+          statusCode: 404,
+          message: `Carusel with id ${id} not found`,
+          data: null
+        }
+      }
+      return {
+        statusCode: 200,
+        message: 'Carusel fetched successfully',
+        data: carusel
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error on fetching carusel: ${error.message}`,
+      )
+    }
   }
 
-  update(id: number, updateCaruselDto: UpdateCaruselDto, file: Express.Multer.File | any) {
-    return `This action updates a #${id} carusel`;
+  async update(id: number, updateCaruselDto: UpdateCaruselDto, file: Express.Multer.File | any) {
+    try {
+      const carusel = await this.caruselRepository.findOne({
+        where: { id },
+      })
+      if(!carusel) {
+        return {
+          statusCode: 404,
+          message: `Carusel with id ${id} not found`,
+          data: null
+        }
+      }
+      if(carusel.url){
+        await this.fileService.deleteFile(carusel.url, 'caruselImages')
+      }
+      let caruselImage: any;
+      if(file){
+        const fileName = await this.fileService.createFile(file, 'caruselImages');
+        caruselImage = fileName
+      }
+      await this.caruselRepository.update(id, {...updateCaruselDto, url: caruselImage});
+      return {
+        statusCode: 200,
+        message: 'Carusel updated successfully',
+        data: await this.caruselRepository.findOne({
+          where: { id },
+        }),
+      }
+
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error on updating carusel: ${error.message}`,
+      )
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} carusel`;
+  async remove(id: number) {
+    try {
+      const carusel = await this.caruselRepository.findOne({
+        where: { id },
+      })
+      if(!carusel) {
+        return {
+          statusCode: 404,
+          message: `Carusel with id ${id} not found`,
+          data: null
+        }
+      }
+      await this.fileService.deleteFile(carusel.url, 'caruselImages')
+      await this.caruselRepository.remove(carusel);
+      if(carusel.url){
+        await this.fileService.deleteFile(carusel.url, 'caruselImages')
+      }
+      return {
+        statusCode: 200,
+        message: 'Carusel deleted successfully',
+        data: null,
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error on removing carusel: ${error.message}`,
+      )
+    }
   }
 }
