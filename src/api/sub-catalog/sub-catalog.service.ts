@@ -43,7 +43,7 @@ export class SubCatalogService {
 
   async findAll() {
     try {
-      const subCatalogs = await this.subCatalogRepository.find({relations: ['catalog']});
+      const subCatalogs = await this.subCatalogRepository.find({relations: ['catalog', 'categories']});
       return {
         statusCode: 200,
         message: 'SubCatalogs fetched successfully',
@@ -58,7 +58,7 @@ export class SubCatalogService {
 
   async findOne(id: number) {
     try {
-      const subCatalog = await this.subCatalogRepository.findOne({where: {id}, relations: ['catalog']});
+      const subCatalog = await this.subCatalogRepository.findOne({where: {id}, relations: ['catalog', 'categories']});
       if(!subCatalog) {
         return {
           statusCode: 404,
