@@ -19,7 +19,7 @@ export class CaruselService {
       let caruselImage;
       if(file){
         const fileName = await this.fileService.createFile(file, 'caruselImages');
-        caruselImage = this.caruselRepository.create({url: fileName});
+        caruselImage = fileName
       }
       const carusel = this.caruselRepository.create({...createCaruselDto, url: caruselImage});
       await this.caruselRepository.save(carusel);
